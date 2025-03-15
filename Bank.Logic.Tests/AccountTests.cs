@@ -74,6 +74,22 @@ public class AccountTests
         account.GetBalance().Should().Be(expectedBalance, nameof(IAccount.GetBalance));
     }
 
+    [Fact]
+    public void TryAddTransaction_WhenAddingManagementFee_ShouldReturnTrue()
+    {
+        bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow));
+        result.Should().BeTrue("ManagementFee transaction should be added successfully.");
+    }
+
+    [Fact]
+    public void GetBalance_WithManagementFeeDeduction_ShouldReturnCorrectTotal()
+    {
+        account.TryAddTransaction(CreateTransaction(TransactionType.Deposit, 100, DateTime.UtcNow));
+        account.TryAddTransaction(CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow));
+        double expectedBalance = 100 - 5; // Default ManagementFee is 5.0
+        account.GetBalance().Should().Be(expectedBalance, "Balance should reflect ManagementFee deduction.");
+    }
+
     public ITransaction CreateTransaction(TransactionType type, double amount, DateTime date)
     {
         return new Transaction(type, amount, date, skipSignValidation: true); // Add skipSignValidation

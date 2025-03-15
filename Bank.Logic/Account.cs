@@ -29,7 +29,7 @@ public class Account : IAccount
     {
         if (transaction == null) return false;
 
-        // Reject Fee_Overdraft and other internal/managed transaction types
+        // Reject Unknown, Interest, and Fee_Overdraft (Fee_Management is allowed)
         if (transaction.Type == TransactionType.Unknown || 
             transaction.Type == TransactionType.Interest || 
             transaction.Type == TransactionType.Fee_Overdraft) // Re-added Fee_Overdraft
@@ -42,33 +42,30 @@ public class Account : IAccount
         if (transaction.Type == TransactionType.Withdraw && transaction.Amount <= 0)
             return false;
 
-        ITransaction newTransaction = new Transaction(transaction.Type, transaction.Amount, transaction.Date, skipSignValidation: true);
-
-        double adjustedAmount = newTransaction.Amount;
-        if (Utilities.IndicatesNegativeAmount(newTransaction.Type) && adjustedAmount > 0)
+        double adjustedAmount = transaction.Amount;
+        if (transaction.Type == TransactionType.Fee_Management)
+        {
+            adjustedAmount = -Settings.ManagementFee; // Use configurable value from AccountSettings
+        }
+        else if (Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount > 0)
         {
             adjustedAmount = -adjustedAmount;
         }
-        else if (!Utilities.IndicatesNegativeAmount(newTransaction.Type) && adjustedAmount < 0)
+        else if (!Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount < 0)
         {
             adjustedAmount = -adjustedAmount;
         }
 
-        if (newTransaction.Type == TransactionType.Fee_Management)
-        {
-            adjustedAmount = -5.0;
-        }
-
-        if (Utilities.IndicatesNegativeAmount(newTransaction.Type) && adjustedAmount >= 0)
+        if (Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount >= 0)
         {
             return false;
         }
-        if (!Utilities.IndicatesNegativeAmount(newTransaction.Type) && adjustedAmount < 0)
+        if (!Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount < 0)
         {
             return false;
         }
 
-        newTransaction = new Transaction(newTransaction.Type, adjustedAmount, transaction.Date, skipSignValidation: true);
+        ITransaction newTransaction = new Transaction(transaction.Type, adjustedAmount, transaction.Date, skipSignValidation: true);
 
         double currentBalance = GetBalance();
         double newBalance = currentBalance + newTransaction.Amount;
