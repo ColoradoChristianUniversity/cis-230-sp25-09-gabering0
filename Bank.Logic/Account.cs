@@ -29,10 +29,10 @@ public class Account : IAccount
     {
         if (transaction == null) return false;
 
-        // Reject Unknown, Interest, and Fee_Overdraft (Fee_Management is allowed)
+        // Allow ManagementFee transactions explicitly
         if (transaction.Type == TransactionType.Unknown || 
             transaction.Type == TransactionType.Interest || 
-            transaction.Type == TransactionType.Fee_Overdraft) // Re-added Fee_Overdraft
+            transaction.Type == TransactionType.Fee_Overdraft)
         {
             return false;
         }
@@ -42,34 +42,51 @@ public class Account : IAccount
         if (transaction.Type == TransactionType.Withdraw && transaction.Amount <= 0)
             return false;
 
-        double adjustedAmount = transaction.Amount;
-        if (transaction.Type == TransactionType.Fee_Management)
+        // Create the transaction with the original amount, bypassing sign validation initially
+        ITransaction newTransaction = new Transaction(transaction.Type, transaction.Amount, transaction.Date, skipSignValidation: true);
+
+        // Adjust the amount based on the transaction type
+        double adjustedAmount = newTransaction.Amount;
+        if (Utilities.IndicatesNegativeAmount(newTransaction.Type))
         {
-            adjustedAmount = -Settings.ManagementFee; // Use configurable value from AccountSettings
+            // For withdrawals, ManagementFee, etc., amount should be negative
+            if (adjustedAmount > 0)
+            {
+                adjustedAmount = -adjustedAmount; // Ensure negative
+            }
         }
-        else if (Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount > 0)
+        else
         {
-            adjustedAmount = -adjustedAmount;
-        }
-        else if (!Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount < 0)
-        {
-            adjustedAmount = -adjustedAmount;
+            // For deposits, etc., amount should be positive
+            if (adjustedAmount < 0)
+            {
+                adjustedAmount = -adjustedAmount; // Ensure positive
+            }
         }
 
-        if (Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount >= 0)
+        // For ManagementFee, override with the configured value after initial validation
+        if (newTransaction.Type == TransactionType.Fee_Management)
+        {
+            if (newTransaction.Amount >= 0) return false; // Reject if initial amount is not negative
+            adjustedAmount = Settings.ManagementFee; // Should be -5.0
+        }
+
+        // Final validation: ensure the adjusted amount matches the expected sign
+        if (Utilities.IndicatesNegativeAmount(newTransaction.Type) && adjustedAmount >= 0)
         {
             return false;
         }
-        if (!Utilities.IndicatesNegativeAmount(transaction.Type) && adjustedAmount < 0)
+        if (!Utilities.IndicatesNegativeAmount(newTransaction.Type) && adjustedAmount < 0)
         {
             return false;
         }
 
-        ITransaction newTransaction = new Transaction(transaction.Type, adjustedAmount, transaction.Date, skipSignValidation: true);
+        // Update the transaction with the adjusted amount
+        ITransaction finalTransaction = new Transaction(newTransaction.Type, adjustedAmount, newTransaction.Date, skipSignValidation: true);
 
         double currentBalance = GetBalance();
-        double newBalance = currentBalance + newTransaction.Amount;
-        bool isWithdrawal = newTransaction.Type == TransactionType.Withdraw;
+        double newBalance = currentBalance + finalTransaction.Amount;
+        bool isWithdrawal = finalTransaction.Type == TransactionType.Withdraw;
 
         if (isWithdrawal && newBalance < 0)
         {
@@ -78,7 +95,7 @@ public class Account : IAccount
             return false;
         }
 
-        _transactions.Add(newTransaction);
+        _transactions.Add(finalTransaction);
         return true;
     }
 }

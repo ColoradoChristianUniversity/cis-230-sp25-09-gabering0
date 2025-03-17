@@ -1,18 +1,23 @@
-namespace Bank.Logic;
+using Bank.Logic;
+using FluentAssertions;
+using Xunit;
 
-public static class Utilities
+namespace Bank.Logic.Tests
 {
-    public static bool IndicatesNegativeAmount(this TransactionType type)
+    public class UtilityTests
     {
-        return type switch
+        [Fact]
+        public void IsNegative_ShouldReturnTrue_ForNegativeTransactionTypes()
         {
-            TransactionType.Fee_Overdraft => true,
-            TransactionType.Fee_Management => true,
-            TransactionType.Withdraw => true,
-            TransactionType.Deposit => false,
-            TransactionType.Interest => false,
-            TransactionType.Unknown => false,
-            _ => false
-        };
+            bool result = Utilities.IndicatesNegativeAmount(TransactionType.Withdraw);
+            result.Should().BeTrue($"Withdraw should indicate a negative amount");
+        }
+
+        [Fact]
+        public void IsNegative_ShouldReturnFalse_ForPositiveTransactionTypes()
+        {
+            bool result = Utilities.IndicatesNegativeAmount(TransactionType.Deposit);
+            result.Should().BeFalse($"Deposit should not indicate a negative amount");
+        }
     }
 }

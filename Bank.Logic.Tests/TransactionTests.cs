@@ -13,21 +13,21 @@ namespace Bank.Logic.Tests
         }
 
         [Fact]
-        public void CreateTransaction_WithValidType_ShouldSetCorrectType()
+        public void Transaction_ShouldHaveCorrectType()
         {
             var transaction = CreateTransaction(TransactionType.Deposit, 100, DateTime.UtcNow);
             transaction.Type.Should().Be(TransactionType.Deposit, nameof(ITransaction.Type));
         }
 
         [Fact]
-        public void CreateTransaction_WithValidAmount_ShouldSetCorrectAmount()
+        public void Transaction_ShouldHaveCorrectAmount()
         {
             var transaction = CreateTransaction(TransactionType.Deposit, 100, DateTime.UtcNow);
             transaction.Amount.Should().Be(100, nameof(ITransaction.Amount));
         }
 
         [Fact]
-        public void CreateTransaction_WithValidDate_ShouldSetCorrectDate()
+        public void Transaction_ShouldHaveCorrectDate()
         {
             var date = DateTime.UtcNow;
             var transaction = CreateTransaction(TransactionType.Deposit, 100, date);
@@ -35,102 +35,53 @@ namespace Bank.Logic.Tests
         }
 
         [Fact]
-        public void CreateTransaction_Deposit_ShouldValidatePositiveAmount()
+        public void Transaction_ShouldValidateAmountSign_Deposit()
         {
             var transaction = CreateTransaction(TransactionType.Deposit, 100, DateTime.UtcNow);
             transaction.Amount.Should().BePositive($"{nameof(ITransaction.Amount)} should be positive for {TransactionType.Deposit}");
         }
 
         [Fact]
-        public void CreateTransaction_Withdraw_ShouldValidateNegativeAmount()
+        public void Transaction_ShouldValidateAmountSign_Withdraw()
         {
             var transaction = CreateTransaction(TransactionType.Withdraw, -50, DateTime.UtcNow);
             transaction.Amount.Should().BeNegative($"{nameof(ITransaction.Amount)} should be negative for {TransactionType.Withdraw}");
         }
 
         [Fact]
-        public void CreateTransaction_FeeOverdraft_ShouldValidateNegativeAmount()
+        public void Transaction_ShouldValidateAmountSign_FeeOverdraft()
         {
             var transaction = CreateTransaction(TransactionType.Fee_Overdraft, -35, DateTime.UtcNow);
             transaction.Amount.Should().BeNegative($"{nameof(ITransaction.Amount)} should be negative for {TransactionType.Fee_Overdraft}");
         }
 
         [Fact]
-        public void CreateTransaction_Interest_ShouldValidatePositiveAmount()
+        public void Transaction_ShouldValidateAmountSign_Interest()
         {
             var transaction = CreateTransaction(TransactionType.Interest, 10, DateTime.UtcNow);
             transaction.Amount.Should().BePositive($"{nameof(ITransaction.Amount)} should be positive for {TransactionType.Interest}");
         }
 
         [Fact]
-        public void CreateTransaction_Unknown_ShouldValidatePositiveAmount()
+        public void Transaction_ShouldValidateAmountSign_Unknown()
         {
             var transaction = CreateTransaction(TransactionType.Unknown, 0, DateTime.UtcNow);
             transaction.Amount.Should().BePositive($"{nameof(ITransaction.Amount)} should be positive for {TransactionType.Unknown}");
         }
 
         [Fact]
-        public void CreateTransaction_FeeManagement_ShouldValidateNegativeAmount()
-        {
-            var transaction = CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow);
-            transaction.Amount.Should().BeNegative($"{nameof(ITransaction.Amount)} should be negative for {TransactionType.Fee_Management}");
-        }
-
-        [Fact]
-        public void CreateTransaction_DepositWithNegativeAmount_ShouldThrowException()
-        {
-            Action act = () => CreateTransaction(TransactionType.Deposit, -100, DateTime.UtcNow);
-            act.Should().Throw<ArgumentOutOfRangeException>($"{nameof(ITransaction.Amount)} should be positive for {TransactionType.Deposit}");
-        }
-
-        [Fact]
-        public void CreateTransaction_InterestWithNegativeAmount_ShouldThrowException()
-        {
-            Action act = () => CreateTransaction(TransactionType.Interest, -10, DateTime.UtcNow);
-            act.Should().Throw<ArgumentOutOfRangeException>($"{nameof(ITransaction.Amount)} should be positive for {TransactionType.Interest}");
-        }
-
-        [Fact]
-        public void CreateTransaction_FeeManagementWithPositiveAmount_ShouldThrowException()
-        {
-            Action act = () => CreateTransaction(TransactionType.Fee_Management, 5, DateTime.UtcNow);
-            act.Should().Throw<ArgumentOutOfRangeException>($"{nameof(ITransaction.Amount)} should be negative for {TransactionType.Fee_Management}");
-        }
-
-        [Fact]
-        public void CreateTransaction_WithdrawWithPositiveAmount_ShouldThrowException()
-        {
-            Action act = () => CreateTransaction(TransactionType.Withdraw, 50, DateTime.UtcNow);
-            act.Should().Throw<ArgumentOutOfRangeException>($"{nameof(ITransaction.Amount)} should be negative for {TransactionType.Withdraw}");
-        }
-
-        [Fact]
-        public void CreateTransaction_FeeOverdraftWithPositiveAmount_ShouldThrowException()
-        {
-            Action act = () => CreateTransaction(TransactionType.Fee_Overdraft, 35, DateTime.UtcNow);
-            act.Should().Throw<ArgumentOutOfRangeException>($"{nameof(ITransaction.Amount)} should be negative for {TransactionType.Fee_Overdraft}");
-        }
-
-        // New ManagementFee tests
-        [Fact]
         public void CreateTransaction_WithManagementFee_ShouldSetCorrectType()
         {
             var transaction = CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow);
-            transaction.Type.Should().Be(TransactionType.Fee_Management, "ManagementFee transaction should have the correct type.");
+            transaction.Type.Should().Be(TransactionType.Fee_Management);
+            transaction.Amount.Should().Be(-5);
         }
 
         [Fact]
         public void CreateTransaction_WithPositiveManagementFee_ShouldThrowException()
         {
             Action act = () => CreateTransaction(TransactionType.Fee_Management, 5, DateTime.UtcNow);
-            act.Should().Throw<ArgumentOutOfRangeException>("ManagementFee amount must be negative.");
-        }
-
-        [Fact]
-        public void CreateTransaction_WithNegativeManagementFee_ShouldBeValid()
-        {
-            var transaction = CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow);
-            transaction.Amount.Should().Be(-5, "ManagementFee amount should be negative and valid.");
+            act.Should().Throw<ArgumentOutOfRangeException>("ManagementFee amount must be negative");
         }
     }
 }

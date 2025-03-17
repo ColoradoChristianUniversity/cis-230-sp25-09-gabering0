@@ -17,7 +17,14 @@ public class Transaction : ITransaction
     public double Amount
     {
         get => _amount;
-        set => _amount = value; // No validation here
+        set
+        {
+            if (_type == TransactionType.Fee_Management && value >= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "ManagementFee amount must be negative.");
+            }
+            _amount = value;
+        }
     }
 
     public DateTime Date
@@ -38,7 +45,6 @@ public class Transaction : ITransaction
         _type = type;
         if (!skipSignValidation)
         {
-            // Validate the sign of the amount
             bool shouldBeNegative = Utilities.IndicatesNegativeAmount(type);
             if (shouldBeNegative && amount >= 0)
             {
@@ -49,7 +55,7 @@ public class Transaction : ITransaction
                 throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be positive for this transaction type.");
             }
         }
-        Amount = amount == 0 && type == TransactionType.Unknown ? 1.0 : amount; // Default to 1 if 0 for Unknown
+        Amount = amount == 0 && type == TransactionType.Unknown ? 1.0 : amount;
         _date = date;
     }
 }

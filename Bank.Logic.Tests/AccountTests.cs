@@ -8,11 +8,10 @@ namespace Bank.Logic.Tests;
 
 public class AccountTests
 {
-    private readonly IAccount account = new Account();
-
     [Fact]
-    public void GetBalance_WithDepositsAndWithdrawals_ShouldReturnCorrectBalance()
+    public void GetBalance_ShouldReturnCorrectBalance()
     {
+        IAccount account = new Account();
         account.TryAddTransaction(CreateTransaction(TransactionType.Deposit, 200, DateTime.UtcNow));
         account.TryAddTransaction(CreateTransaction(TransactionType.Withdraw, 50, DateTime.UtcNow));
 
@@ -21,50 +20,57 @@ public class AccountTests
     }
 
     [Fact]
-    public void TryAddTransaction_WhenAddingInterest_ShouldReturnFalse()
+    public void TryAddTransaction_ShouldReturnFalse_WhenAddingInterestDirectly()
     {
+        IAccount account = new Account();
         bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Interest, 100, DateTime.UtcNow));
         result.Should().BeFalse(nameof(IAccount.TryAddTransaction));
     }
 
     [Fact]
-    public void TryAddTransaction_WhenAddingOverdraftFeeDirectly_ShouldReturnFalse()
+    public void TryAddTransaction_ShouldReturnFalse_WhenAddingOverdraftFeeDirectly()
     {
+        IAccount account = new Account();
         bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Fee_Overdraft, -35, DateTime.UtcNow));
         result.Should().BeFalse(nameof(IAccount.TryAddTransaction));
     }
 
     [Fact]
-    public void TryAddTransaction_WhenWithdrawalExceedsBalance_ShouldReturnFalse()
+    public void TryAddTransaction_ShouldReturnFalse_WhenOverdraftOccurs()
     {
+        IAccount account = new Account();
         bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Withdraw, 200, DateTime.UtcNow));
         result.Should().BeFalse(nameof(IAccount.TryAddTransaction));
     }
 
     [Fact]
-    public void TryAddTransaction_WhenOverdraftOccurs_ShouldApplyOverdraftFee()
+    public void TryAddTransaction_ShouldApplyOverdraftFee_WhenOverdraftOccurs()
     {
+        IAccount account = new Account();
         account.TryAddTransaction(CreateTransaction(TransactionType.Withdraw, 200, DateTime.UtcNow));
         account.GetTransactions().Should().Contain(t => t.Type == TransactionType.Fee_Overdraft && t.Amount == -35);
     }
 
     [Fact]
-    public void TryAddTransaction_WhenDepositingNegativeAmount_ShouldReturnFalse()
+    public void TryAddTransaction_ShouldReturnFalse_WhenDepositingNegativeAmount()
     {
+        IAccount account = new Account();
         bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Deposit, -100, DateTime.UtcNow));
         result.Should().BeFalse(nameof(IAccount.TryAddTransaction));
     }
 
     [Fact]
-    public void TryAddTransaction_WhenWithdrawingZeroAmount_ShouldReturnFalse()
+    public void TryAddTransaction_ShouldReturnFalse_WhenWithdrawingZeroAmount()
     {
+        IAccount account = new Account();
         bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Withdraw, 0, DateTime.UtcNow));
         result.Should().BeFalse(nameof(IAccount.TryAddTransaction));
     }
 
     [Fact]
-    public void GetBalance_WithMultipleDepositsAndWithdrawals_ShouldReturnCorrectTotal()
+    public void GetBalance_ShouldHandleMultipleDepositsAndWithdrawals()
     {
+        IAccount account = new Account();
         account.TryAddTransaction(CreateTransaction(TransactionType.Deposit, 500, DateTime.UtcNow));
         account.TryAddTransaction(CreateTransaction(TransactionType.Withdraw, 200, DateTime.UtcNow));
         account.TryAddTransaction(CreateTransaction(TransactionType.Deposit, 300, DateTime.UtcNow));
@@ -77,21 +83,25 @@ public class AccountTests
     [Fact]
     public void TryAddTransaction_WhenAddingManagementFee_ShouldReturnTrue()
     {
+        IAccount account = new Account();
         bool result = account.TryAddTransaction(CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow));
-        result.Should().BeTrue("ManagementFee transaction should be added successfully.");
+        result.Should().BeTrue(nameof(IAccount.TryAddTransaction));
+        account.GetTransactions().Should().Contain(t => t.Type == TransactionType.Fee_Management && t.Amount == -5);
     }
 
     [Fact]
     public void GetBalance_WithManagementFeeDeduction_ShouldReturnCorrectTotal()
     {
+        IAccount account = new Account();
         account.TryAddTransaction(CreateTransaction(TransactionType.Deposit, 100, DateTime.UtcNow));
         account.TryAddTransaction(CreateTransaction(TransactionType.Fee_Management, -5, DateTime.UtcNow));
-        double expectedBalance = 100 - 5; // Default ManagementFee is 5.0
-        account.GetBalance().Should().Be(expectedBalance, "Balance should reflect ManagementFee deduction.");
+
+        double expectedBalance = 100 - 5;
+        account.GetBalance().Should().Be(expectedBalance, nameof(IAccount.GetBalance));
     }
 
     public ITransaction CreateTransaction(TransactionType type, double amount, DateTime date)
     {
-        return new Transaction(type, amount, date, skipSignValidation: true); // Add skipSignValidation
+        return new Transaction(type, amount, date, skipSignValidation: true);
     }
 }

@@ -7,7 +7,7 @@ public static class Utilities
         return type switch
         {
             TransactionType.Fee_Overdraft => true,
-            TransactionType.Fee_Management => true, // Already true, just confirming
+            TransactionType.Fee_Management => true,
             TransactionType.Withdraw => true,
             TransactionType.Deposit => false,
             TransactionType.Interest => false,
